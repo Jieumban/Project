@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>NCKU Multi-Tag IPS Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 20px; }
+        #status { margin: 10px; padding: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        canvas { background: white; border: 2px solid #333; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
+        .legend { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
+        .tag-box { padding: 8px 15px; border-radius: 4px; color: white; font-weight: bold; min-width: 120px; }
+    </style>
+</head>
+<body>
+
+    <h2>NCKU Project: 多裝置即時定位儀表板</h2>
+    <div id="status" style="background: #ffeaa7; color: #d63031;">正在建立通訊連線...</div>
+    
+    <canvas id="mapCanvas" width="600" height="500"></canvas>
+    
+    <div class="legend">
+        <div style="background: #1976d2; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold;">● Beacon (B0-B3)</div>
+        <div id="tag01-label" class="tag-box" style="background: #d32f2f;">Tag 01: 等待數據</div>
+        <div id="tag02-label" class="tag-box" style="background: #2e7d32;">Tag 02: 等待數據</div>
+    </div>
+
+<script>
+    const MQTT_CONFIG = { host: "broker.emqx.io", port: 8084, topic: "ncku/project/+" };
+    const SCALE = 80, OFFSET_X = 60, OFFSET_Y = 60;
+    
+    const tags = {
+        "tag01": { x: 0, y: 0, color: "#d32f2f", lastSeen: 0 },
+        "tag02": { x: 0, y: 0, color: "#2e7d32", lastSeen: 0 }
+    };
+
+    const beacons = [{x:0,y:0}, {x:5,y:0}, {x:5,y:4}, {x:0,y:4}];
+    const canvas = document.getElementById('mapCanvas'), ctx = canvas.getContext('2d');
+
+    const client = new Paho.MQTT.Client(`wss://${MQTT_CONFIG.host}:${MQTT_CONFIG.port}/mqtt`, "web_" + Math.random().toString(16).substr(2, 8));
+
+    client.onMessageArrived = (msg) => {
+        try {
+            const data = JSON.parse(msg.payloadString);
+            if (tags[data.id]) {
+                tags[data.id].x = data.x;
+                tags[data.id].y = data.y;
+                tags[data.id].lastSeen = Date.now();
+                
+                const label = document.getElementById(`${data.id}-label`);
+                if (label) label.innerText = `${data.id}: (${data.x.toFixed(2)}, ${data.y.toFixed(2)})`;
+                
+                render();
+            }
+        } catch(e) { console.error("Parse Error", e); }
+    };
+
+    client.connect({ 
+        onSuccess: () => { 
+            client.subscribe(MQTT_CONFIG.topic); 
+            const s = document.getElementById('status');
+            s.innerText = "✅ 伺服器通訊正常：數據接收中"; 
+            s.style.background = "#c6ffc6"; s.style.color = "#006600";
+        }, 
+        useSSL: true 
+    });
+
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // 畫網格
+        ctx.strokeStyle = "#f0f0f0";
+        for(let i=0; i<8; i++) {
+            ctx.beginPath(); ctx.moveTo(i*SCALE+OFFSET_X, 0); ctx.lineTo(i*SCALE+OFFSET_X, canvas.height); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, canvas.height-(i*SCALE+OFFSET_Y)); ctx.lineTo(canvas.width, canvas.height-(i*SCALE+OFFSET_Y)); ctx.stroke();
+        }
+
+        // 畫 Beacon
+        beacons.forEach((b, i) => {
+            const bx = b.x*SCALE+OFFSET_X, by = canvas.height-(b.y*SCALE+OFFSET_Y);
+            ctx.fillStyle = "#1976d2";
+            ctx.beginPath(); ctx.arc(bx, by, 8, 0, Math.PI*2); ctx.fill();
+            ctx.fillStyle = "#333"; ctx.font = "bold 12px Arial";
+            ctx.fillText("B"+i, bx+10, by-10);
+        });
+
+        // 畫所有在線 Tag
+        Object.keys(tags).forEach(id => {
+            const tag = tags[id];
+            if (Date.now() - tag.lastSeen < 10000) { 
+                const tx = tag.x*SCALE+OFFSET_X, ty = canvas.height-(tag.y*SCALE+OFFSET_Y);
+                // 畫光暈
+                ctx.fillStyle = tag.color + "33"; 
+                ctx.beginPath(); ctx.arc(tx, ty, 22, 0, Math.PI*2); ctx.fill();
+                // 畫中心點
+                ctx.fillStyle = tag.color;
+                ctx.beginPath(); ctx.arc(tx, ty, 10, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(tx, ty, 3, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = tag.color;
+                ctx.fillText(id, tx+12, ty+12);
+            }
+        });
+    }
+
+    window.onload = render;
+</script>
+</body>
+</html>
