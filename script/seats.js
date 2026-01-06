@@ -1,7 +1,7 @@
-const SEAT_A = { xMin: 0, xMax: 2.5, yMin: 2, yMax: 4 };
-const SEAT_B = { xMin: 2.5, xMax: 5, yMin: 2, yMax: 4 };
-const SEAT_C = { xMin: 0, xMax: 2.5, yMin: 0, yMax: 2 };
-const SEAT_D = { xMin: 2.5, xMax: 5, yMin: 0, yMax: 2 };
+const SEAT_A = { xMin: -5, xMax: 2.5, yMin: 2, yMax: 8 };
+const SEAT_B = { xMin: 2.5, xMax: 10, yMin: 2, yMax: 8 };
+const SEAT_C = { xMin: -5, xMax: 2.5, yMin: -4, yMax: 2 };
+const SEAT_D = { xMin: 2.5, xMax: 10, yMin: -4, yMax: 2 };
 
 let seats = {
   A: { id: "A", area: SEAT_A, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
