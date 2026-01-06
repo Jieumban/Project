@@ -2,22 +2,41 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>NCKU Multi-Tag IPS Dashboard</title>
+    <title>Multi-Tag IPS Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
     <style>
-        body { font-family: sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 20px; }
-        #status { margin: 10px; padding: 15px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+
+
+        body { zoom: 1; font-family: sans-serif; text-align: center; background: #f4f4f4; margin: 0; padding: 5px; }
+        #status { margin: 10px; padding: 10px; font-weight: bold; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         canvas { background: white; border: 2px solid #333; margin-top: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); }
         .legend { margin-top: 20px; display: flex; justify-content: center; gap: 15px; }
         .tag-box { padding: 8px 15px; border-radius: 4px; color: white; font-weight: bold; min-width: 120px; }
+        .back-btn {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            background: #1976d2;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            z-index: 999;
+        }
+
+        .back-btn:hover {
+        background: #0d47a1;
+        }
     </style>
 </head>
 <body>
 
-    <h2>NCKU Project: 多裝置即時定位儀表板</h2>
+    <h2>多裝置即時定位儀表板</h2>
     <div id="status" style="background: #ffeaa7; color: #d63031;">正在建立通訊連線...</div>
     
-    <canvas id="mapCanvas" width="600" height="500"></canvas>
+    <canvas id="mapCanvas" width="520" height="350"></canvas>
     
     <div class="legend">
         <div style="background: #1976d2; color: white; padding: 8px 15px; border-radius: 4px; font-weight: bold;">● Beacon (B0-B3)</div>
@@ -25,9 +44,12 @@
         <div id="tag02-label" class="tag-box" style="background: #2e7d32;">Tag 02: 等待數據</div>
     </div>
 
+    <a href="index.html" class="back-btn">← Back to index</a>
+
+
 <script>
     const MQTT_CONFIG = { host: "broker.emqx.io", port: 8084, topic: "ncku/project/+" };
-    const SCALE = 80, OFFSET_X = 60, OFFSET_Y = 60;
+    const SCALE = 60, OFFSET_X = 70, OFFSET_Y = 45;
     
     const tags = {
         "tag01": { x: 0, y: 0, color: "#d32f2f", lastSeen: 0 },
@@ -70,7 +92,7 @@
         
         // 畫網格
         ctx.strokeStyle = "#f0f0f0";
-        for(let i=0; i<8; i++) {
+        for(let i=0; i<7; i++) {
             ctx.beginPath(); ctx.moveTo(i*SCALE+OFFSET_X, 0); ctx.lineTo(i*SCALE+OFFSET_X, canvas.height); ctx.stroke();
             ctx.beginPath(); ctx.moveTo(0, canvas.height-(i*SCALE+OFFSET_Y)); ctx.lineTo(canvas.width, canvas.height-(i*SCALE+OFFSET_Y)); ctx.stroke();
         }
