@@ -105,25 +105,44 @@
   <!-- 座位由 JS 產生 -->
 </div>
 
+<script src="./script/seats.js"></script>
 
 <script>
-const SEAT_A = { xMin: 0, xMax: 2.5, yMin: 2, yMax: 4 };
-const SEAT_B = { xMin: 2.5, xMax: 5, yMin: 2, yMax: 4 };
-const SEAT_C = { xMin: 0, xMax: 2.5, yMin: 0, yMax: 2 };
-const SEAT_D = { xMin: 2.5, xMax: 5, yMin: 0, yMax: 2 };
 
-let seats = {
-  A: { id: "A", area: SEAT_A, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
-  B: { id: "B", area: SEAT_B, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
-  C: { id: "C", area: SEAT_C, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
-  D: { id: "D", area: SEAT_D, occupied: false, inCnt: 0, outCnt: 0, startTime: null }
-};
+// /* ========= 2. UI 更新邏輯 ========= */
+// function updateSeatsUI() {
+//   const container = document.getElementById("seatContainer");
+//   if (!container) return;
+  
+//   container.innerHTML = "";
+//   let usedCount = 0;
 
-function isInside(x, y, area) {
-  return (x >= area.xMin && x <= area.xMax && y >= area.yMin && y <= area.yMax);
-}
+//   Object.values(seats).forEach(seat => {
+//     if (seat.occupied) usedCount++;
 
-/* ========= 2. UI 更新邏輯 ========= */
+//     const div = document.createElement("div");
+//     div.className = "seat";
+
+//     let durationText = "—";
+//     if (seat.occupied && seat.startTime) {
+//       const minutes = Math.floor((Date.now() - seat.startTime) / 60000);
+//       durationText = minutes + " 分鐘";
+//     }
+
+//     div.innerHTML = `
+//       <div class="seat-name">座位 ${seat.id}</div>
+//       <div class="light ${seat.occupied ? "green" : "red"}"></div>
+//       <div class="info">
+//         狀態：${seat.occupied ? "使用中" : "空閒"}<br>
+//         已使用時間：${durationText}
+//       </div>
+//     `;
+//     container.appendChild(div);
+//   });
+
+//   document.getElementById("userCount").innerText = usedCount;
+// }
+
 function updateSeatsUI() {
   const container = document.getElementById("seatContainer");
   if (!container) return;
@@ -137,6 +156,12 @@ function updateSeatsUI() {
     const div = document.createElement("div");
     div.className = "seat";
 
+    // --- 新增：取得使用者名稱文字 ---
+    // 將 Set 轉換成陣列並用逗號隔開，如果沒人就顯示「無」
+    const userNames = seat.tagsInArea.size > 0 
+      ? Array.from(seat.tagsInArea).join(", ") 
+      : "None";
+
     let durationText = "—";
     if (seat.occupied && seat.startTime) {
       const minutes = Math.floor((Date.now() - seat.startTime) / 60000);
@@ -147,8 +172,9 @@ function updateSeatsUI() {
       <div class="seat-name">座位 ${seat.id}</div>
       <div class="light ${seat.occupied ? "green" : "red"}"></div>
       <div class="info">
-        狀態：${seat.occupied ? "使用中" : "空閒"}<br>
-        已使用時間：${durationText}
+        User：<strong>${userNames}</strong><br>
+        Status：${seat.occupied ? "使用中" : "空閒"}<br>
+        Time used：${durationText}
       </div>
     `;
     container.appendChild(div);
