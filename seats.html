@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>座位即時狀態</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <style>
@@ -70,66 +71,97 @@
       margin-top: 10px;
       font-size: 16px;
     }
+    .back-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      background: #1976d2;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      z-index: 999;
+    }
+
+    .back-btn:hover {
+      background: #0d47a1;
+    }
+
   </style>
 </head>
 
 <body>
 
+  <a href="index.html" class="back-btn">← Back to index</a>
+
 <header>
   <h1>座位即時狀態</h1>
-  <div class="count">👤 使用人數：<span id="userCount">0</span></div>
+  <div class="count">使用人數：<span id="userCount">0</span></div>
 </header>
 
 <div class="container" id="seatContainer">
   <!-- 座位由 JS 產生 -->
 </div>
 
+
 <script>
-  // 模擬座位資料（之後可改成 fetch ESP32 API）
-  let seats = [
-    { id: "A", used: true,  startTime: Date.now() - 5 * 60000 },
-    { id: "B", used: false, startTime: null },
-    { id: "C", used: true,  startTime: Date.now() - 12 * 60000 },
-    { id: "D", used: false, startTime: null }
-  ];
+const SEAT_A = { xMin: 0, xMax: 2.5, yMin: 2, yMax: 4 };
+const SEAT_B = { xMin: 2.5, xMax: 5, yMin: 2, yMax: 4 };
+const SEAT_C = { xMin: 0, xMax: 2.5, yMin: 0, yMax: 2 };
+const SEAT_D = { xMin: 2.5, xMax: 5, yMin: 0, yMax: 2 };
 
-  function updateSeats() {
-    const container = document.getElementById("seatContainer");
-    container.innerHTML = "";
+let seats = {
+  A: { id: "A", area: SEAT_A, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
+  B: { id: "B", area: SEAT_B, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
+  C: { id: "C", area: SEAT_C, occupied: false, inCnt: 0, outCnt: 0, startTime: null },
+  D: { id: "D", area: SEAT_D, occupied: false, inCnt: 0, outCnt: 0, startTime: null }
+};
 
-    let usedCount = 0;
+function isInside(x, y, area) {
+  return (x >= area.xMin && x <= area.xMax && y >= area.yMin && y <= area.yMax);
+}
 
-    seats.forEach(seat => {
-      if (seat.used) usedCount++;
+/* ========= 2. UI 更新邏輯 ========= */
+function updateSeatsUI() {
+  const container = document.getElementById("seatContainer");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  let usedCount = 0;
 
-      const div = document.createElement("div");
-      div.className = "seat";
+  Object.values(seats).forEach(seat => {
+    if (seat.occupied) usedCount++;
 
-      let durationText = "—";
-      if (seat.used && seat.startTime) {
-        const minutes = Math.floor((Date.now() - seat.startTime) / 60000);
-        durationText = minutes + " 分鐘";
-      }
+    const div = document.createElement("div");
+    div.className = "seat";
 
-      div.innerHTML = `
-        <div class="seat-name">座位 ${seat.id}</div>
-        <div class="light ${seat.used ? "green" : "red"}"></div>
-        <div class="info">
-          狀態：${seat.used ? "使用中" : "空閒"}<br>
-          已使用時間：${durationText}
-        </div>
-      `;
+    let durationText = "—";
+    if (seat.occupied && seat.startTime) {
+      const minutes = Math.floor((Date.now() - seat.startTime) / 60000);
+      durationText = minutes + " 分鐘";
+    }
 
-      container.appendChild(div);
-    });
+    div.innerHTML = `
+      <div class="seat-name">座位 ${seat.id}</div>
+      <div class="light ${seat.occupied ? "green" : "red"}"></div>
+      <div class="info">
+        狀態：${seat.occupied ? "使用中" : "空閒"}<br>
+        已使用時間：${durationText}
+      </div>
+    `;
+    container.appendChild(div);
+  });
 
-    document.getElementById("userCount").innerText = usedCount;
-  }
+  document.getElementById("userCount").innerText = usedCount;
+}
 
-  // 每 2 秒更新一次（之後可接即時資料）
-  setInterval(updateSeats, 2000);
-  updateSeats();
+// 初始畫出介面
+updateSeatsUI();
 </script>
+
+<script src="./script/update.js"></script>
 
 </body>
 </html>
